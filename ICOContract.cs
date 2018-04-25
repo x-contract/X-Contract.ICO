@@ -1,4 +1,4 @@
-﻿/**************************************************************************************************************************
+/**************************************************************************************************************************
  * The X-Contract foundation is a organzation of dedicating on smart contract evolution.
  * This smart contract is used to issue X-Contract coins, XCC.
  * X-Contract only accepts NEO donation. Donators have to transfer NEO to specified NEO address.
@@ -12,6 +12,7 @@ using Neo.SmartContract.Framework;
 using Neo.SmartContract.Framework.Services.Neo;
 using Neo.SmartContract.Framework.Services.System;
 using System;
+using System.ComponentModel;
 using System.Numerics;
 
 namespace X_Contract.ICO
@@ -23,28 +24,31 @@ namespace X_Contract.ICO
         /// The NEO Asset ID
         /// The NEO Governing Token: c56f33fc6ecfcd0c225c4ab356fee59390af8560be0e930faebe74a6daff7c9b
         /// </summary>
-        private static readonly byte[] _NEO_Asset_ID = 
-            Neo.SmartContract.Framework.Helper.HexToBytes("b9c7ffad6a47beeaf039e0eb0658fa09395eef635ba4c522c0dcfce6cf33f65c");
+        private static readonly byte[] _NEO_Asset_ID = { 155, 124, 255, 218, 166, 116, 190, 174, 15, 147, 14, 190, 96, 133, 175, 144, 147, 229, 254, 86, 179, 74, 92, 34, 12, 205, 207, 110, 252, 51, 111, 197 };
         /// <summary>
-        /// The Gas Asset ID
-        /// The Gas Token: 602c79718b16e442de58778e148d0b1084e3b2dffd5de6b7b16cee7969282de7
+        /// X-Contract base address.
         /// </summary>
-        private static readonly byte[] _Gas_Asset_ID = 
-            Neo.SmartContract.Framework.Helper.HexToBytes("e72d286979ee6cb1b7e65dfddfb2e384100b8d148e7758de42e4168b71792c60");
+        public static readonly byte[] _owner = "AGQxjHHyzM85r82YFQC5XGt2u5CYBuDtBu".ToScriptHash();
         /// <summary>
         /// The name of X-Contract coin.
         /// </summary>
         private static string _coinName = "X-Contract Coin";
         /// <summary>
-        /// The symbol of X-Contract coin.s
+        /// The symbol of X-Contract coin.
         /// </summary>
         private static string _coinSymbol = "XCC";
         /// <summary>
         /// Precision
         /// </summary>
         private static byte _coinPrecision = 8;
-
-        private static uint _ratio = 1500;
+        /// <summary>
+        /// Exchange rates to NEO.
+        /// </summary>
+        private static uint _ratio = 1000;
+        /// <summary>
+        /// ICO amount.
+        /// </summary>
+        private static uint _totalAmount = 30000000;
         #endregion
 
         /// <summary>
@@ -54,85 +58,85 @@ namespace X_Contract.ICO
         {
             if (TriggerType.Application == Runtime.Trigger)
             {
-                method = method.ToLower().Trim();
-                switch (method)
+                if ("totalSupply" == method)
+                    return TotalSupply();
+                else if ("name" == method)
+                    return Name();
+                else if ("symbol" == method)
+                    return Symbol();
+                else if ("decimals" == method)
+                    return Decimals();
+                else if ("deploy" == method)
+                    return Deploy();
+                else if ("balanceOf" == method)
                 {
-                    case "totalsupply":
-                        return TotalSupply();
-                    case "name":
-                        return Name();
-                    case "symbol":
-                        return Symbol();
-                    case "decimals":
-                        return Decimals();
-                    case "balanceof":
-                        if (args.Length != 1)
-                            return 0;
-                        else
-                            return BalanceOf((byte[])args[0]);
-                    case "transfer":
-                        {
-                            if (3 != args.Length)
-                                return false;
-                            // Retrieve transfer parameters
-                            byte[] from = (byte[])args[0];
-                            byte[] to = (byte[])args[1];
-                            if (from == to)
-                                return true;
-                            if (0 == from.Length || 0 == to.Length)
-                                return false;
-                            BigInteger value = (BigInteger)args[2];
-
-                            // Check from address whether has been signed.
-                            if (!Runtime.CheckWitness(from))
-                                return false;
-                            // Check whether is a springboard calling.
-                            if (ExecutionEngine.EntryScriptHash.AsBigInteger()
-                                != ExecutionEngine.CallingScriptHash.AsBigInteger())
-                                return false;
-                            // Do transaction.
-                            return Transfer(from, to, value);
-                        }
-                    case "transfer_app":
-                        {
-                            if (3 != args.Length)
-                                return false;
-                            // Retrieve parameters
-                            byte[] from = (byte[])args[0];
-                            byte[] to = (byte[])args[1];
-                            BigInteger value = (BigInteger)args[2];
-
-                            // Check whether from address is script.
-                            if (from.AsBigInteger() != ExecutionEngine.CallingScriptHash.AsBigInteger())
-                                return false;
-                            // Do transaction.
-                            return Transfer(from, to, value);
-                        }
-                    case "mintTokens":
-                        {
-                            if (0 != args.Length)
-                                return 0;
-                            return MintTokens();
-                        }
-                    case "refund":
-                        {
-                            if (1 != args.Length)
-                                return 0;
-                            byte[] address = (byte[])args[0];
-                            if (!Runtime.CheckWitness(address))
-                                return false;
-                            return Refund(address);
-                        }
-                    case "getRefundTarget":
-                        {
-                            if (1 != args.Length)
-                                return 0;
-                            byte[] hash = (byte[])args[0];
-                            return GetTargetByTransactionID(hash);
-                        }
-                    default:
-                        return false;
+                    if (1 != args.Length)
+                        return 0;
+                    else
+                        return BalanceOf((byte[])args[0]);
                 }
+                else if ("transfer" == method)
+                {
+                    if (3 != args.Length)
+                        return false;
+                    // Retrieve transfer parameters
+                    byte[] from = (byte[])args[0];
+                    byte[] to = (byte[])args[1];
+                    if (from == to)
+                        return true;
+                    if (0 == from.Length || 0 == to.Length)
+                        return false;
+                    BigInteger value = (BigInteger)args[2];
+
+                    // Check from address whether has been signed.
+                    if (!Runtime.CheckWitness(from))
+                        return false;
+                    // Check whether is a springboard calling.
+                    if (ExecutionEngine.EntryScriptHash.AsBigInteger()
+                        != ExecutionEngine.CallingScriptHash.AsBigInteger())
+                        return false;
+                    // Do transaction.
+                    return Transfer(from, to, value);
+                }
+                else if ("transfer_app" == method)
+                {
+                    if (3 != args.Length)
+                        return false;
+                    // Retrieve parameters
+                    byte[] from = (byte[])args[0];
+                    byte[] to = (byte[])args[1];
+                    BigInteger value = (BigInteger)args[2];
+
+                    // Check whether from address is script.
+                    if (from.AsBigInteger() != ExecutionEngine.CallingScriptHash.AsBigInteger())
+                        return false;
+                    // Do transaction.
+                    return Transfer(from, to, value);
+                }
+                else if ("mintTokens" == method)
+                {
+                    if (0 != args.Length)
+                        return 0;
+                    return MintTokens();
+                }
+                else if ("refund" == method)
+                {
+                    if (1 != args.Length)
+                        return 0;
+                    byte[] address = (byte[])args[0];
+                    if (!Runtime.CheckWitness(address))
+                        return false;
+                    return RefundAll(address);
+                }
+                else if ("getRefundTarget" == method)
+                {
+                    if (1 != args.Length)
+                        return 0;
+                    byte[] hash = (byte[])args[0];
+                    return GetTargetByTransactionID(hash);
+                }
+                else
+                    return false;
             }
             // To get NEO from ICO address.
             else if (TriggerType.Verification == Runtime.Trigger)
@@ -143,15 +147,15 @@ namespace X_Contract.ICO
                 TransactionOutput[] outputs = trans.GetOutputs();
                 for (int i = 0; i < inputs.Length; i++)
                 {
-                    byte[] coinid = inputs[i].PrevHash.Concat(new byte[] { 0, 0 });
+                    byte[] coinID = inputs[i].PrevHash.Concat(new byte[] { 0, 0 });
                     // UTXO euqals zero.
                     if (0 == inputs[i].PrevIndex)
                     {
-                        byte[] target = Storage.Get(Storage.CurrentContext, coinid);
+                        byte[] target = Storage.Get(Storage.CurrentContext, coinID);
                         if (target.Length > 0)
                         {
                             // Check whether only one output address in current transaction.
-                            if (outputs.Length != 1)
+                            if (1 != outputs.Length)
                                 return false;
 
                             // Check whether withdraw address is target address.
@@ -168,7 +172,7 @@ namespace X_Contract.ICO
                     }
                 }
             }
-            
+
             return false;
         }
 
@@ -215,6 +219,20 @@ namespace X_Contract.ICO
             return Storage.Get(Storage.CurrentContext, address).AsBigInteger();
         }
         /// <summary>
+        /// Run only once when ICO smart comtract has been deployed.
+        /// It is a global initalize function.
+        /// </summary>
+        /// <returns></returns>
+        public static bool Deploy()
+        {
+            byte[] total_supply = Storage.Get(Storage.CurrentContext, "totalSupply");
+            if (total_supply.Length != 0) return false;
+            // Initialized coins amount.
+            Storage.Put(Storage.CurrentContext, _owner, _totalAmount);
+            Storage.Put(Storage.CurrentContext, "totalSupply", _totalAmount);
+            return true;
+        }
+        /// <summary>
         /// Asset transfer from address to donation address.
         /// </summary>
         /// <param name="from"></param>
@@ -223,14 +241,17 @@ namespace X_Contract.ICO
         /// <returns></returns>
         private static bool Transfer(byte[] from, byte[] to, BigInteger value)
         {
-            if (value <= 0) return false;
-            if (from == to) return true;
+            if (value <= 0) // Invalid value.
+                return false;
+            if (from == to) // Do nothing.
+                return true;
 
-            // Someone who wants to donate NEO coins.
+            // Someone donatorAddress wants to donate NEO coins.
             if (from.Length > 0)
             {
                 BigInteger from_value = Storage.Get(Storage.CurrentContext, from).AsBigInteger();
-                if (from_value < value) return false;
+                if (from_value < value)
+                    return false;
                 if (from_value == value)
                     Storage.Delete(Storage.CurrentContext, from);
                 else
@@ -239,11 +260,14 @@ namespace X_Contract.ICO
             // The receive address.
             if (to.Length > 0)
             {
+                // Retrieve stock of XCC.
                 BigInteger to_value = Storage.Get(Storage.CurrentContext, to).AsBigInteger();
+                // Set new value.
                 Storage.Put(Storage.CurrentContext, to, to_value + value);
             }
             //Log transaction information into block.
             PutTransactionInfo(from, to, value);
+
             return true;
         }
         /// <summary>
@@ -280,6 +304,8 @@ namespace X_Contract.ICO
                     break;
                 }
             }
+            if (null == donatorAddress) // Cannot find NEO asset.
+                return false;
 
             TransactionOutput[] outputs = trans.GetOutputs();
             ulong value = 0;
@@ -294,27 +320,33 @@ namespace X_Contract.ICO
             }
 
             //Calcuate XCC amount by NEO.
-            ulong XCCAmount = value * _ratio;
-            var TotalSupply = Storage.Get(Storage.CurrentContext, "totalSupply").AsBigInteger();
-            TotalSupply += XCCAmount;
-            Storage.Put(Storage.CurrentContext, "totalSupply", TotalSupply);
+            ulong XCCAmount = CalcCoinsAmount(donatorAddress, value, _ratio);
+            if (0 < XCCAmount)
+            {
 
-            // Issue XCC token to donators.
-            return Transfer(null, donatorAddress, XCCAmount);
+                // Update total issued amount.
+                var totalSupply = Storage.Get(Storage.CurrentContext, "totalSupply").AsBigInteger();
+                totalSupply += XCCAmount;
+                Storage.Put(Storage.CurrentContext, "totalIssued", totalSupply);
+                // Issue XCC token to donators.
+                return Transfer(null, donatorAddress, XCCAmount);
+            }
+            else
+                return false;  //Donation failed with invalid XCC amount.
 
         }
         /// <summary>
-        /// Refund NEO to donators.
+        /// RefundAll NEO to donators.
         /// </summary>
-        /// <param name="who"></param>
+        /// <param name="donatorAddress"></param>
         /// <returns></returns>
-        private static bool Refund(byte[] who)
+        private static bool RefundAll(byte[] donatorAddress)
         {
             Transaction trans = ExecutionEngine.ScriptContainer as Transaction;
             TransactionOutput[] outputs = trans.GetOutputs();
             if (outputs[0].AssetId.AsBigInteger() != _NEO_Asset_ID.AsBigInteger())
                 return false;
-            // Refund to self.
+            // RefundAll to self.
             if (outputs[0].ScriptHash.AsBigInteger() != ExecutionEngine.ExecutingScriptHash.AsBigInteger())
                 return false;
 
@@ -326,12 +358,12 @@ namespace X_Contract.ICO
 
             // Destory XCC that has been issued.
             long count = outputs[0].Value;
-            if(!Transfer(who, null, count))
+            if (!Transfer(donatorAddress, null, count))
                 return false;
 
             // Set UTXO.
             byte[] coinID = trans.Hash.Concat(new byte[] { 0, 0 });
-            Storage.Put(Storage.CurrentContext, coinID, who);
+            Storage.Put(Storage.CurrentContext, coinID, donatorAddress);
             // Fix the amount of total amount.
             var totalSupply = Storage.Get(Storage.CurrentContext, "totalSupply").AsBigInteger();
 
@@ -366,12 +398,54 @@ namespace X_Contract.ICO
         {
             if (null == from || null == to)
                 return null;
-            byte[] valueBytes = value.ToByteArray();
-            byte[] buffer = new byte[from.Length + to.Length + valueBytes.Length];
-            from.CopyTo(buffer, 0);
-            to.CopyTo(buffer, from.Length);
-            valueBytes.CopyTo(buffer, from.Length + to.Length);
+            byte[] buffer = GetBytes(from.Length).Concat(from);
+            buffer = buffer.Concat(GetBytes(to.Length)).Concat(to);
+            byte[] valueArray = value.AsByteArray();
+            buffer = buffer.Concat(GetBytes(valueArray.Length)).Concat(valueArray);
             return buffer;
+        }
+        private static byte[] GetBytes(int value)
+        {
+            byte[] array = new byte[4];
+            byte[] array2 = array;
+            for (int i = 0; i < 4; i++)
+                array[3 - i] = (byte)(value >> (32 - (i + 1) * 8));
+            return array;
+        }
+
+        private static ulong CalcCoinsAmount(byte[] sender, ulong value, ulong rate)
+        {
+            ulong token = value * rate;
+            BigInteger total_supply = Storage.Get(Storage.CurrentContext, "totalSupply").AsBigInteger();
+            BigInteger balance_token = _totalAmount - total_supply;
+            if (balance_token <= 0)
+            {
+                RefundAll(sender);
+                return 0;
+            }
+            else if (balance_token < token)
+            {
+                RefundAsset(sender, (long)((float)(token - balance_token) / rate));
+                token = (ulong)balance_token;
+            }
+            return token;
+        }
+        /// <summary>
+        /// RefundAll NEO to donators.
+        /// </summary>
+        /// <param name="donatorAddress"></param>
+        /// <returns></returns>
+        private static bool RefundAsset(byte[] donatorAddress, long NEOValue)
+        {
+            Transaction trans = ExecutionEngine.ScriptContainer as Transaction;
+            TransactionOutput[] outputs = trans.GetOutputs();
+            if (outputs[0].AssetId.AsBigInteger() != _NEO_Asset_ID.AsBigInteger())
+                return false;
+            // RefundAll to self.
+            if (outputs[0].ScriptHash.AsBigInteger() != ExecutionEngine.ExecutingScriptHash.AsBigInteger())
+                return false;
+
+            return true;
         }
         #endregion
     }
